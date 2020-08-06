@@ -1,0 +1,62 @@
+version: '3'
+
+services:
+
+# сервис http сервер
+  web:
+    build: ./web
+#    переменная окружения чтобы не было проблем с доступом
+    environment:
+#      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_USER=#1000
+#   расшарить проект в контейнере, laravel должен быть доступен внутри контейнера
+    volumes:
+      - ${APP_PATH_HOST}:${APP_PATH_CONTAINER}
+#    локальный порт 8080 а в контейнере указан в инструкции 80
+#    левые порты в сервисах должны отличаться
+    ports:
+      - 8080:80
+#    рабочая директория пригодится когда будем входить в контейнер для выполнения команд
+    working_dir: ${APP_PATH_CONTAINER}
+
+  db:
+    #    если стоит этот ключ то образ для данного контейнера создается из dockerfile в каталоге db
+    #    нужен либо ключ build либо ключ image
+#      build: ./db
+    image: mariadb
+    #    перезапускать всегда если упадет
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ei7veeChu4bo_TTy123__
+#      правый путь взят из инструкции на хабе
+    volumes:
+      - ${DB_PATH_HOST}:/var/lib/mysql
+
+#    #объявляется сервис из образа которого будет создан контейнер
+#  adminer:
+##        build: ./adminer
+#      image: adminer
+#      restart: always
+##        левые порты в сервисах должны отличаться
+#      ports:
+#        - 5080:8080
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+    restart: always
+    ports:
+      - 4080:80
+    volumes:
+      - /sessions
+
+  composer:
+    image: composer:1.9
+    volumes:
+      - ${APP_PATH_HOST}:${APP_PATH_CONTAINER}
+#      указание рабочей директории для того чтобы выполнить composer install
+    working_dir: ${APP_PATH_CONTAINER}
+#      будет выполнена в корне проектв
+    command: composer install
